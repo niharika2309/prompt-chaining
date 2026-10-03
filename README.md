@@ -77,6 +77,17 @@ docs print no code), `clinical.specialty` (GT = case specialty, docs print the
 issuing department, and verbatim rules forbid inference), `document_number`
 (GT id is a synthetic-library batch id in a footer the model is told to ignore).
 
+## Browse results (Streamlit)
+
+```bash
+doc_env/bin/python -m streamlit run app.py    # -> http://localhost:8501
+```
+
+Reads `reports/runs/<dir>/` (any run: pilot, full, or future scanned runs).
+Pages: **summary** (headline metrics, verdict distribution, per-family
+breakdown, latency/token charts) · **side-by-side** (per document: GT |
+monolithic | chain, colour-coded) · **raw output** (full model JSON).
+
 ## LLM endpoint
 
 `http://100.117.48.99:8888/v1` — model `Qwen3.8-27B` (VLM, reasoning model).
@@ -98,6 +109,7 @@ for an ablation.
 | `parse_chain.py` | approach B (classify → extract → verify) |
 | `evaluate.py` | field mapping, normalization, verdicts, metrics |
 | `report.py` | markdown + HTML side-by-side |
+| `app.py` | Streamlit viewer for run outputs |
 | `main.py` | CLI |
 
 ## Phase 2 (not yet built)

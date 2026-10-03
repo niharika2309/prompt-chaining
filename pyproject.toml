@@ -8,4 +8,5 @@ dependencies = [
     "openai>=1.40",
     "pydantic>=2.7",
     "pypdf>=4.0",
+    "streamlit>=1.40",
 ]

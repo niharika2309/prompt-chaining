@@ -1,0 +1,11 @@
+[project]
+name = "prompt-chaining"
+version = "0.1.0"
+description = "Side-by-side comparison: monolithic long prompt vs prompt chaining for medical document parsing (Qwen3.8-27B)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.40",
+    "pydantic>=2.7",
+    "pypdf>=4.0",
+]

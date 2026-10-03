@@ -1,0 +1,9 @@
+# Downloaded datasets & generated outputs
+data/
+extracted_forms/
+reports/
+
+# Python environments
+doc_env/
+__pycache__/
+*.pyc

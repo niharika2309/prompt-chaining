@@ -104,7 +104,7 @@ def write_markdown(run_dir: Path, mon: list[dict], chain: list[dict],
         "",
         "## Headline comparison",
         "",
-        "| Metric | Monolithic (1 call) | Chain (3 calls) |",
+        "| Metric | Monolithic (1 call) | Chain (2 calls) |",
         "|---|---|---|",
     ]
     for k in ("field_acc", "recall", "precision", "hallucination_rate"):
@@ -199,7 +199,7 @@ def write_html(run_dir: Path, mon: list[dict], chain: list[dict], gts: dict,
 </style></head><body>
 <h1>Document parser: monolithic prompt vs prompt chaining</h1>
 <p>Model Qwen3.8-27B @ 100.117.48.99:8888 · synthetic AU medical PDFs · thinking off</p>
-<table><tr><th>metric</th><th>monolithic (1 call, full spec)</th><th>chain (classify → extract → verify)</th></tr>{summary}</table>
+<table><tr><th>metric</th><th>monolithic (1 call, full spec)</th><th>chain (classify → extract)</th></tr>{summary}</table>
 <p class="legend">legend: <span class="ok">correct/abstain</span><span class="partial">partial</span><span class="bad">wrong/missed</span><span class="fab">fabricated (not in source)</span><span class="na">not scored (see methodology)</span></p>
 {''.join(rows)}
 </body></html>"""

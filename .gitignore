@@ -10,6 +10,7 @@ corpus/
 *.jsonl
 *.pdf
 *.png
+!assets/*.png
 
 # Extracted document corpus (text)
 *.txt

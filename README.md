@@ -10,11 +10,14 @@ endpoint:
 | **Chain** | 2 calls: classify type/family → extract with a *family-tailored* spec |
 
 Both use identical persona, rules, Pydantic schema, temperature (0), and
-thinking disabled — the only variable is prompt structure. A third "verify"
-step (re-check every field against the source) was benchmarked and then
-removed: on this task it returned the draft unchanged in 49/50 documents
-while costing +62% latency / +75% completion tokens (see
-`EVALUATION_REPORT.md`).
+thinking disabled — the only variable is prompt structure.
+
+## Results
+
+The 2-step chain is **22% cheaper in tokens** on 49 of 50 documents, with
+quality a statistical tie (CIs on the differences include 0) — the full
+write-up (metric framework, paired significance, step decomposition) is in
+[`EVALUATION_REPORT.md`](EVALUATION_REPORT.md).
 
 ## Data
 
@@ -98,6 +101,10 @@ Reads `reports/runs/<dir>/` (any run: pilot, full, or future scanned runs).
 Pages: **summary** (headline metrics, verdict distribution, per-family
 breakdown, latency/token charts) · **side-by-side** (per document: GT |
 monolithic | chain, colour-coded) · **raw output** (full model JSON).
+
+![Summary page: headline metrics and verdict distribution](assets/app_summary.png)
+
+![Side-by-side page: per-document, colour-coded field verdicts](assets/app_side_by_side.png)
 
 ## LLM endpoint
 

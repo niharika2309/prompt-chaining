@@ -16,8 +16,6 @@ Both use identical persona, rules, Pydantic schema, temperature and endpoint —
 | `20261003_192116_full50` | monolithic + chain | canonical 2-way (quality, tokens) |
 | `20261003_075445_pilot11` (11 docs) | monolithic | sanity check |
 
-A third, 3-step variant (chain + a **verify** pass) was also benchmarked on the same 50 docs before being removed from the codebase; its fate is documented in §5. Its result files were removed with the code.
-
 ---
 
 ## Executive summary

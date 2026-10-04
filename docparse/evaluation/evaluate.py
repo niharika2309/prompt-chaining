@@ -24,12 +24,12 @@ Headline metrics:
   clean_docs  docs with zero wrong/fabricated/extra values
 """
 import csv
-import json
 import re
 from collections import defaultdict
 from datetime import datetime
 
-import schema
+from ..core import config
+from ..core import schema
 
 STOP = {
     "the", "and", "for", "with", "from", "this", "that", "was", "were", "has",
@@ -178,7 +178,7 @@ L3_MAP = {
 
 def load_gt(pdf_names: list[str]) -> dict[str, dict]:
     out = {}
-    with open("ground_truth.csv") as f:
+    with open(config.GT_CSV) as f:
         for row in csv.DictReader(f):
             if row["pdf_filename"] in pdf_names:
                 out[row["pdf_filename"]] = row

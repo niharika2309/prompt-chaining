@@ -12,8 +12,9 @@ validation, keeping the experiment controlled.
 import json
 import time
 
-import config
 from openai import OpenAI
+
+from . import config
 
 _client: OpenAI | None = None
 

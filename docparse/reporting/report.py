@@ -3,11 +3,10 @@
 For every document: Ground Truth | Monolithic | Chain, cell by cell,
 with verdict colouring — the actual "side by side" deliverable.
 """
-import json
 from pathlib import Path
 
-import evaluate
-import schema
+from ..core import schema
+from ..evaluation import evaluate
 
 VERDICT_CLASS = {
     "correct": "ok", "abstain": "ok", "partial": "partial",

@@ -13,27 +13,37 @@ from collections import defaultdict
 import pandas as pd
 import streamlit as st
 
-import config
-import evaluate
-import schema
+from docparse.core import config
+from docparse.core import schema
+from docparse.evaluation import evaluate
 
 st.set_page_config(page_title="Monolithic vs Chain — medical doc parsing", layout="wide")
 
 APPROACHES = ["monolithic", "chain"]
-APPROACH_LABEL = {"monolithic": "Monolithic (1 call)", "chain": "Chain (classify→extract→verify)"}
+APPROACH_LABEL = {"monolithic": "Monolithic (1 call)", "chain": "Chain (classify→extract)"}
 
+# Dark-theme cell palette (inline styles bypass the Streamlit theme, so these
+# are dark-friendly: dim background + light text, one consistent look).
 CELL = {
-    "correct": "background:#d9edda",
-    "abstain": "background:#f2f2f5",
-    "partial": "background:#fff3cd",
-    "wrong": "background:#f8d7da",
-    "missed": "background:#f8d7da",
-    "extra": "background:#f8d7da",
-    "n/a": "background:#ececf1;color:#888",
+    "correct": "background:#173526;color:#7ee2a8",
+    "abstain": "background:#161b22;color:#8b949e",
+    "partial": "background:#3a2d12;color:#e3c56d",
+    "wrong": "background:#3d1c22;color:#f08a8a",
+    "missed": "background:#3d1c22;color:#f08a8a",
+    "extra": "background:#3d1c22;color:#f08a8a",
+    "n/a": "background:#1c2128;color:#8b949e",
 }
-FAB = "background:#e39aa5;font-weight:600"
+FAB = "background:#6b2431;color:#ffd7d7;font-weight:600"
 ICON = {"correct": "✅", "abstain": "·", "partial": "🟡", "wrong": "❌",
         "missed": "⬜", "extra": "➕", "n/a": "–"}
+
+TABLE_CSS = """<style>
+table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+td, th { border: 1px solid #30363d; padding: 4px 8px; font-size: 12.5px;
+         text-align: left; vertical-align: top; color: #e6edf3; }
+th { background: #1c2128; }
+td.f { font-family: ui-monospace, monospace; white-space: nowrap; color: #9fb0c0; }
+</style>"""
 
 
 def cell_style(v: dict) -> str:
@@ -44,7 +54,7 @@ def cell_style(v: dict) -> str:
 
 def esc(x) -> str:
     if x is None or x == "" or x == []:
-        return "<span style='color:#aaa'>—</span>"
+        return "<span style='color:#8b949e'>—</span>"
     if isinstance(x, list):
         x = " ; ".join(str(i) for i in x)
     if isinstance(x, dict):
@@ -246,8 +256,7 @@ def _doc_table(gt: dict, rec_m: dict, rec_c: dict, ev_m: dict, ev_c: dict) -> st
             f"<tr><td class='f'>{html.escape(f)}</td><td>{gm}</td>"
             f"<td style='{cell_style(vm)}'>{ICON.get(vm.get('verdict'), '·')} {mm}</td>"
             f"<td style='{cell_style(vc)}'>{ICON.get(vc.get('verdict'), '·')} {mc}</td></tr>")
-    return (f"<table><tr><th></th><th></th><th></th><th></th></tr>".replace("<tr>", "") +
-            "".join(trs) + "</table>")
+    return TABLE_CSS + "<table>" + "".join(trs) + "</table>"
 
 
 def page_sides(data: dict, gts: dict):

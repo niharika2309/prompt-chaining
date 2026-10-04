@@ -3,10 +3,9 @@
 The prompt carries L1 + L2 + ALL 12 family detail blocks so the model itself
 decides which block applies. This is the "long prompt" side of the comparison.
 """
-import config
-import prompts
-import schema
-from llm import chat_json
+from ..core import prompts
+from ..core import schema
+from ..core.llm import chat_json
 
 
 def _validate(data: dict, expected_family: str = None):

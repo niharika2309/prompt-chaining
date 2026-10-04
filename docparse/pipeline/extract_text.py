@@ -4,10 +4,11 @@ The 50 documents in pdfs/ are digital (reportlab) PDFs; text extraction is
 clean. Scanned variants (pdfs_scanned/) are image-only and are out of scope
 for v1 (separate phase using the endpoint's vision input).
 """
-import config
 from pathlib import Path
 
 from pypdf import PdfReader
+
+from ..core import config
 
 
 def extract_one(pdf_path: Path) -> str:

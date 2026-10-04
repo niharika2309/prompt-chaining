@@ -14,7 +14,7 @@ MAX_RETRIES = 2          # extra attempts when JSON is invalid / fails validatio
 CONCURRENCY = 3          # parallel documents (single-GPU endpoint)
 
 # --- Paths ---
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]  # repo root (docparse/core/ -> root)
 DATASET_DIR = ROOT / "data" / "synthetic-australian-medical-documents-sample"
 PDF_DIR = DATASET_DIR / "pdfs"
 GT_CSV = DATASET_DIR / "ground_truth.csv"

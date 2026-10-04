@@ -1,19 +1,20 @@
-"""Approach B — PROMPT CHAINING: three sequential calls, each output feeds the next.
+"""Approach B — PROMPT CHAINING: two sequential calls, each output feeds the next.
 
-  Step 1  classify  : identify document_type + document_family (drives everything)
-  Step 2  extract   : schema tailored to the identified family ONLY (short, focused)
-  Step 3  verify    : re-check every field against the source text, correct/nullify
+  Step 1  classify : identify document_type + document_family (drives everything)
+  Step 2  extract  : schema tailored to the identified family ONLY (short, focused)
 
 The chain's structural advantages over the monolithic prompt:
   - step 2 sees a SMALL spec (one family block instead of all twelve)
-  - step 3 is a dedicated verification pass with the full text in context again
-"""
-import json
+  - steps are isolated, attributable, and individually retryable
 
-import config
-import prompts
-import schema
-from llm import chat_json
+A third "verify" step (re-check every field against the source) was
+benchmarked in the 3-way comparison (EVALUATION_REPORT.md): on this task it
+returned the draft unchanged in 49/50 documents while costing +62% latency /
++75% completion tokens, so it was removed from the pipeline.
+"""
+from ..core import prompts
+from ..core import schema
+from ..core.llm import chat_json
 
 
 def _validate(data: dict, expected_family: str | None = None):
@@ -96,20 +97,6 @@ def _s2(text: str, pdf_name: str, classification: dict | None) -> dict:
     )
 
 
-def _s3(text: str, draft: dict) -> dict:
-    system = f"{prompts.PERSONA}\n\n{prompts.RULES}\n\n" + prompts.s3_verify_spec()
-    user = (
-        f"Document text:\n=== DOCUMENT START ===\n{text}\n=== DOCUMENT END ===\n\n"
-        f"Your draft extraction:\n{json.dumps(draft, indent=1)}\n\n"
-        "Return the corrected JSON object."
-    )
-    return chat_json(
-        [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        validate=lambda d: _validate(d, expected_family=draft.get("document_family")),
-        tag="chain:s3",
-    )
-
-
 def parse(text: str, pdf_name: str) -> dict:
     steps = {}
 
@@ -120,14 +107,7 @@ def parse(text: str, pdf_name: str) -> dict:
     s2 = _s2(text, pdf_name, classification)
     steps["s2_extract"] = s2
 
-    final, final_meta = None, None
-    if s2.ok and s2.data:
-        s3 = _s3(text, s2.data)
-        steps["s3_verify"] = s3
-        final = s3.data if s3.ok else s2.data  # fall back to s2 if s3 fails
-        final_meta = s3
-    else:
-        final = None
+    final = s2.data if (s2.ok and s2.data) else None
 
     lat = sum(s.latency for s in steps.values())
     ptok = sum(s.prompt_tokens for s in steps.values())

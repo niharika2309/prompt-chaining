@@ -1,9 +1,24 @@
 # Downloaded datasets & generated outputs
 data/
-extracted_forms/
 reports/
+extracted_forms/
+corpus/
 
-# Python environments
+# Data files, wherever they land (ground truth, labels, bboxes, PDFs, images)
+*.csv
+*.json
+*.jsonl
+*.pdf
+*.png
+
+# Extracted document corpus (text)
+*.txt
+
+# Python environments & caches
 doc_env/
+.venv/
 __pycache__/
-*.pyc
+*.py[cod]
+
+# OS / editor noise
+.DS_Store

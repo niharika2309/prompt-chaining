@@ -1,0 +1,10 @@
+# Single fixed theme for the whole dashboard (dark).
+# Streamlit otherwise renders light regardless of the browser's colour scheme,
+# which clashes with the inline cell colours in the side-by-side table.
+
+[theme]
+base = "dark"
+primaryColor = "#4da3ff"
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#161b22"
+textColor = "#e6edf3"

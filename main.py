@@ -17,17 +17,14 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-import config
-import evaluate
-import extract_text
-import parse_chain
-import parse_monolithic
-import report
-import schema
+from docparse.core import config
+from docparse.evaluation import evaluate
+from docparse.pipeline import chain, extract_text, monolithic
+from docparse.reporting import report
 
 APPROACHES = {
-    "monolithic": parse_monolithic,
-    "chain": parse_chain,
+    "monolithic": monolithic,
+    "chain": chain,              # 2-step: classify -> extract
 }
 
 
@@ -127,7 +124,10 @@ def cmd_run(args):
         "docs": names,
     }, indent=2))
 
-    approaches = ["monolithic", "chain"] if args.approach == "both" else [args.approach]
+    if args.approach == "both":
+        approaches = ["monolithic", "chain"]
+    else:
+        approaches = [args.approach]
     for a in approaches:
         print(f"Running {a} on {len(names)} docs (concurrency {args.concurrency})")
         run_approach(a, names, texts, run_dir / f"{a}.jsonl", args.concurrency)
@@ -139,13 +139,18 @@ def cmd_evaluate(args):
     run_dir = Path(args.run)
     if not run_dir.is_absolute():
         run_dir = config.ROOT / run_dir
-    mon = load_jsonl(run_dir / "monolithic.jsonl")
-    chain = load_jsonl(run_dir / "chain.jsonl")
-    gts = load_gt([r["pdf"] for r in mon + chain])
+
+    # Load every approach present in the run dir (order = canonical).
+    names = [a for a in ("monolithic", "chain")
+             if (run_dir / f"{a}.jsonl").exists()]
+    recs_by = {a: load_jsonl(run_dir / f"{a}.jsonl") for a in names}
+    all_recs = [r for a in names for r in recs_by[a]]
+    gts = load_gt([r["pdf"] for r in all_recs])
     texts = load_corpus(list(gts))
 
-    results = {}
-    for name, recs in (("monolithic", mon), ("chain", chain)):
+    metrics = {}
+    for name in names:
+        recs = recs_by[name]
         if not recs:
             continue
         rows = []
@@ -154,23 +159,20 @@ def cmd_evaluate(args):
             src = texts.get(r["pdf"], "")
             rows.append(evaluate.eval_record(r, gt, src))
         (run_dir / f"eval_{name}.json").write_text(json.dumps(rows, indent=1))
-        results[name] = (rows, recs)
-        m = evaluate.full_metrics(recs, rows)
+        metrics[name] = evaluate.full_metrics(recs, rows)
         print(f"\n=== {name} ===")
-        for k, v in m.items():
+        for k, v in metrics[name].items():
             print(f"  {k:20s} {v}")
 
-    if len(results) == 2:
-        mon_m = evaluate.full_metrics(mon, results["monolithic"][0])
-        chain_m = evaluate.full_metrics(chain, results["chain"][0])
-        (run_dir / "metrics.json").write_text(json.dumps(
-            {"monolithic": mon_m, "chain": chain_m}, indent=1))
-        print("\n=== comparison ===")
-        keys = ("field_acc", "recall", "precision", "hallucination_rate",
-                "clean_docs", "mean_latency", "mean_tokens", "first_try")
-        print(f"  {'metric':22s} {'monolithic':>12s} {'chain':>12s}")
-        for k in keys:
-            print(f"  {k:22s} {str(mon_m.get(k)):>12s} {str(chain_m.get(k)):>12s}")
+    if metrics:
+        (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=1))
+        if len(metrics) >= 2:
+            keys = ("field_acc", "recall", "precision", "hallucination_rate",
+                    "clean_docs", "mean_latency", "mean_tokens", "first_try")
+            head = f"  {'metric':22s}" + "".join(f" {a:>12s}" for a in metrics)
+            print("\n=== comparison ===" + head)
+            for k in keys:
+                print(f"  {k:22s}" + "".join(f" {str(metrics[a].get(k)):>12s}" for a in metrics))
     return run_dir
 
 
@@ -207,7 +209,8 @@ def main():
     add_docs(pe)
     pr = sub.add_parser("run")
     add_docs(pr)
-    pr.add_argument("--approach", choices=["monolithic", "chain", "both"], default="both")
+    pr.add_argument("--approach", choices=["monolithic", "chain", "both"],
+                    default="both")
     pr.add_argument("--concurrency", type=int, default=config.CONCURRENCY)
     pr.add_argument("--tag", default="run")
     pv = sub.add_parser("evaluate")

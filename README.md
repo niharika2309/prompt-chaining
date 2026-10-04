@@ -7,10 +7,14 @@ endpoint:
 | Approach | Structure |
 |---|---|
 | **Monolithic** | One long prompt: full field spec (all 12 document-family blocks) + document text → single call |
-| **Prompt chaining** | 3 calls: classify type/family → extract with a *family-tailored* spec → verify every field against the source text |
+| **Chain** | 2 calls: classify type/family → extract with a *family-tailored* spec |
 
 Both use identical persona, rules, Pydantic schema, temperature (0), and
-thinking disabled — the only variable is prompt structure.
+thinking disabled — the only variable is prompt structure. A third "verify"
+step (re-check every field against the source) was benchmarked and then
+removed: on this task it returned the draft unchanged in 49/50 documents
+while costing +62% latency / +75% completion tokens (see
+`EVALUATION_REPORT.md`).
 
 ## Data
 
@@ -22,11 +26,11 @@ downloaded from
 - 50 digital PDFs (`pdfs/`) + 50 scanned variants (`pdfs_scanned/`, phase 2)
 - `ground_truth.csv` / `.jsonl` — 115-column per-doc labels (scoring target)
 - `splits.json` — train/test partition
-- 29 document types clustered into 12 families (see `schema.py`)
+- 29 document types clustered into 12 families (see `docparse/core/schema.py`)
 
 ## The output schema (shared by both approaches)
 
-`schema.py` derives its Pydantic model from the dataset's own ground truth:
+`docparse/core/schema.py` derives its Pydantic model from the dataset's own ground truth:
 
 - **L1 identity** (all docs): type, family, number, date, patient block, facility
 - **L2 clinical core** (all docs): specialty, principal diagnosis, ICD codes, additional diagnoses
@@ -44,9 +48,16 @@ doc_env/bin/python main.py extract --docs pilot
 doc_env/bin/python main.py run --approach both --docs pilot --tag pilot11
 doc_env/bin/python main.py evaluate --run reports/runs/<dir>
 doc_env/bin/python main.py report   --run reports/runs/<dir>
+
+# deep comparison: paired significance tests, step decomposition, cost accounting
+doc_env/bin/python -m docparse.evaluation.analysis reports/runs/<dir> --out reports/analysis_<tag>.json
 ```
 
 `--docs`: `pilot` (11 stratified docs) | `all` (50) | comma-separated filenames.
+`--approach`: `monolithic` | `chain` | `both` (mon+chain).
+`evaluate` scores every `<approach>.jsonl` present in the run dir;
+`docparse/evaluation/analysis.py` adds paired significance tests,
+step decomposition, and cost accounting.
 
 Outputs land in `reports/runs/<ts>_<tag>/` (gitignored):
 
@@ -65,7 +76,7 @@ Outputs land in `reports/runs/<ts>_<tag>/` (gitignored):
 - **precision** — over fields the model populated
 - **hallucination rate** — model values whose tokens are absent from the source text
 - **clean docs** — docs with zero wrong values and zero source-unsupported values
-- **latency / tokens** — per document (chain = sum of its 3 calls)
+- **latency / tokens** — per document (chain = sum of its 2 calls)
 
 Scoring is controlled: the scored field inventory follows the document's
 ground-truth family, so both approaches are measured on the same denominator
@@ -93,24 +104,30 @@ monolithic | chain, colour-coded) · **raw output** (full model JSON).
 `http://100.117.48.99:8888/v1` — model `Qwen3.8-27B` (VLM, reasoning model).
 No server-side structured output (xgrammar not installed), so both approaches
 use instruction-based JSON + Pydantic validation with corrective retries.
-`enable_thinking=false` keeps calls fast; flip `ENABLE_THINKING` in `config.py`
-for an ablation.
+`enable_thinking=false` keeps calls fast; flip `ENABLE_THINKING` in
+`docparse/core/config.py` for an ablation.
 
 ## Modules
 
+All library code lives in the `docparse/` package; the two entry
+points sit in the repo root.
+
 | File | Role |
 |---|---|
-| `config.py` | endpoint, model, retry/concurrency, paths, pilot doc set |
-| `schema.py` | Pydantic output schema + 29 types → 12 family mapping |
-| `prompts.py` | shared persona, rules, JSON-spec renderer |
-| `llm.py` | OpenAI-compatible client, JSON extraction, retry, accounting |
-| `extract_text.py` | pypdf text extraction with caching |
-| `parse_monolithic.py` | approach A |
-| `parse_chain.py` | approach B (classify → extract → verify) |
-| `evaluate.py` | field mapping, normalization, verdicts, metrics |
-| `report.py` | markdown + HTML side-by-side |
-| `app.py` | Streamlit viewer for run outputs |
-| `main.py` | CLI |
+| `main.py` | CLI (root) |
+| `app.py` | Streamlit viewer for run outputs (root) |
+| `docparse/core/config.py` | endpoint, model, retry/concurrency, paths, pilot doc set |
+| `docparse/core/schema.py` | Pydantic output schema + 29 types → 12 family mapping |
+| `docparse/core/prompts.py` | shared persona, rules, JSON-spec renderer |
+| `docparse/core/llm.py` | OpenAI-compatible client, JSON extraction, retry, accounting |
+| `docparse/pipeline/extract_text.py` | pypdf text extraction with caching |
+| `docparse/pipeline/monolithic.py` | approach A (1 call, full spec) |
+| `docparse/pipeline/chain.py` | approach B (classify → extract) |
+| `docparse/evaluation/evaluate.py` | field mapping, normalization, verdicts, metrics |
+| `docparse/evaluation/analysis.py` | paired significance tests, step/cost decomposition, N-way comparison |
+| `docparse/evaluation/canonical_table.py` | assembles the canonical 2-way table used by the evaluation report |
+| `docparse/reporting/report.py` | markdown + HTML side-by-side |
+| `EVALUATION_REPORT.md` | the evaluation report (metric framework + results + verdict) |
 
 ## Phase 2 (not yet built)
 

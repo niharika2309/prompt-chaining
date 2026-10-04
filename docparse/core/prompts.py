@@ -3,7 +3,7 @@
 Both approaches use the same persona, the same output rules, and the same
 field descriptions. The ONLY differences are:
   - monolithic: one call, spec covers L1 + L2 + ALL 12 family detail blocks
-  - chain:      classify -> extract (spec covers ONLY the selected family) -> verify
+  - chain:      classify -> extract (spec covers ONLY the selected family)
 
 The spec renders the NATIVE ParsedDocument shape (flat top level, no wrapper):
 {
@@ -13,7 +13,7 @@ The spec renders the NATIVE ParsedDocument shape (flat top level, no wrapper):
 }
 Validators tolerate a model-side "document" wrapper regardless.
 """
-from schema import (PatientBlock, FacilityBlock, ClinicalBlock, DOC_TYPES, FAMILIES)  # noqa: F401
+from .schema import (PatientBlock, FacilityBlock, ClinicalBlock, DOC_TYPES, FAMILIES)
 
 PERSONA = (
     "You are a domain expert in medical documents, an AI assistant that converts "
@@ -104,10 +104,10 @@ def _med_field() -> tuple:
 
 def family_spec_block(family: str) -> str:
     """JSON-spec for one L3 family detail block (fields from schema.py)."""
-    from schema import (RxDetail, LabDetail, ImagingDetail, EcgDetail, EdDetail,
-                        DischargeDetail, NoteDetail, CorrespondenceDetail,
-                        AssessmentDetail, ChecklistDetail, CertificateDetail,
-                        ConsentDetail)
+    from .schema import (RxDetail, LabDetail, ImagingDetail, EcgDetail, EdDetail,
+                         DischargeDetail, NoteDetail, CorrespondenceDetail,
+                         AssessmentDetail, ChecklistDetail, CertificateDetail,
+                         ConsentDetail)
 
     blocks = {
         "rx": RxDetail, "lab": LabDetail, "imaging": ImagingDetail, "ecg": EcgDetail,
@@ -162,14 +162,3 @@ def s1_classification_spec() -> str:
     )
 
 
-def s3_verify_spec() -> str:
-    return (
-        "Verification task:\n"
-        "- Re-check EVERY non-null field in the draft against the document text.\n"
-        "- If the document does not explicitly contain the value, set that field to null.\n"
-        "- If a value is partially wrong, correct it to exactly what the document says.\n"
-        "- Keep fields that the document clearly supports.\n"
-        "- Return the complete corrected JSON object with the SAME structure and the "
-        "same field set as the draft (no new fields, no dropped keys).\n"
-        "Reply with the corrected JSON object only."
-    )
